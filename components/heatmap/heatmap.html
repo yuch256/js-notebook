@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    .main {
+      text-align: center;
+    }
+
+    #mycanvas {
+      border: 1px solid #000;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="main">
+    <canvas id="mycanvas" width="512" height="512"></canvas>
+  </div>
+
+  <script>
+    const mycanvas = document.getElementById('mycanvas');
+    const ctx = mycanvas.getContext('2d');
+    const canvasRect = mycanvas.getBoundingClientRect();
+    const width = canvasRect.width;
+    const height = canvasRect.height;
+    const radius = 25;
+    const valueRange = 100;
+    const heatPoints = [];
+
+    getHeatPoints();
+    console.log(heatPoints);
+    const colorImageData = inittool();
+    draw();
+
+    function draw() {
+      for (let i = 0; i < heatPoints.length; i++) {
+        const { x, y, value } = heatPoints[i];
+        const alpha = value / valueRange;
+        drawPoint(x, y, alpha);
+      }
+      const imageData = ctx.getImageData(0, 0, width, height);
+      const data = imageData.data;
+      for (let i = 3; i < data.length; i += 4) {
+        const alpha = data[i]
+        if (alpha === 0) continue; // 跳过没有画点的位置
+        // 根据a的值，来找我们彩色映射带的值，将彩色映射带的值重新赋予该canvas的imgdata
+        const color = colorImageData.slice(alpha * 4, alpha * 4 + 3);
+        data[i - 3] = color[0]
+        data[i - 2] = color[1]
+        data[i - 1] = color[2]
+      }
+      ctx.putImageData(imageData, 0, 0)
+    }
+    function drawPoint(x, y, alpha) {
+      let gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
+      gradient.addColorStop(0, 'rgba(0,0,0,1)');
+      gradient.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = gradient;
+      ctx.globalAlpha = alpha;
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2, true);
+      ctx.closePath();
+      ctx.fill();
+    }
+    // 初始化彩色映射带
+    function inittool() {
+      // 定义彩色映射带的渐变值
+      const colorstops = {
+        0.2: 'rgb(0,0,255)',
+        0.3: 'rgb(43,111,231)',
+        0.4: 'rgb(2,192,241)',
+        0.6: 'rgb(44,222,148)',
+        0.8: 'rgb(254,237,83)',
+        0.9: '#f00',
+        1.0: '#f00'
+      }
+      // 这里显示彩色映射带
+      const canvas = document.createElement('canvas')
+      canvas.width = 256
+      canvas.height = 30
+      const ctx = canvas.getContext('2d')
+      const linearGradient = ctx.createLinearGradient(0, 0, 256, 30)
+      for (const key in colorstops) {
+        linearGradient.addColorStop(key, colorstops[key])
+      }
+      ctx.fillStyle = linearGradient
+      ctx.fillRect(0, 0, canvas.width, 30)
+      // 我们取彩色应色带height设为1，因为多取也用不到，只需要第一行像素点的rgba
+      imageData = ctx.getImageData(0, 0, canvas.width - 1, 1).data
+      return imageData;
+    }
+    function getHeatPoints() {
+      const num = 300;
+      for (let i = 0; i < num; i++) {
+        heatPoints.push({
+          x: Math.floor(Math.random() * width),
+          y: Math.floor(Math.random() * height),
+          value: Math.random() * valueRange,
+        });
+      }
+    }
+  </script>
+</body>
+
+</html>
