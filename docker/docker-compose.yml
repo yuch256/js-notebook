@@ -1,0 +1,10 @@
+version: "3"
+
+services:
+  node:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8086:8086"
+    command: "npm run serve"
